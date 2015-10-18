@@ -1,10 +1,39 @@
-<form action="http://localhost:8080/set" method="POST">
-    <input type="text" name="title" value="" />
-    <input type="text" name="link" value="" />
-    <input type="text" name="description" value="" />
-    <input type="text" name="author[name]" value="" />
-    <input type="text" name="author[url]" value="" />
-    <input type="text" name="author[img]" value="" />
-    <input type="text" name="tags" value="" />
-    <input type="submit" value="submit" />
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Post art</title>
+    <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
+</head>
+<body>
+
+<form class="pure-form pure-form-stacked">
+    <fieldset>
+        <legend>A Stacked Form</legend>
+
+        <label for="title">title</label>
+        <input id="title" type="text" placeholder="title">
+
+        <label for="link">link</label>
+        <input id="link" type="text" placeholder="link">
+
+        <label for="description">description</label>
+        <input id="description" type="text" placeholder="description">
+
+        <label for="author[name]">author[name]</label>
+        <input id="author[name]" type="text" placeholder="author[name]">
+
+        <label for="author[url]">author[url]</label>
+        <input id="author[url]" type="text" placeholder="author[url]">
+
+        <label for="author[img]">author[img]</label>
+        <input id="author[img]" type="text" placeholder="author[img]">
+
+        <label for="tags">tags</label>
+        <input id="tags" type="text" placeholder="tags">
+
+        <button type="submit" class="pure-button pure-button-primary">Sign in</button>
+    </fieldset>
 </form>
+
+</body>
+</html>
