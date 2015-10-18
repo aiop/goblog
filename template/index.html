@@ -40,25 +40,21 @@ function ajax(url, fnSucc, fnFaild){
     }else{
         oAjax = new ActiveXObject("Microsoft.XMLHTTP");
     }
-      
-    //2.连接服务器  
+
+    //2.连接服务器
     oAjax.open('GET', url, true);   //open(方法, url, 是否异步)
-      
-    //3.发送请求  
+
+    //3.发送请求
     oAjax.send();
 
     //4.接收返回
     oAjax.onreadystatechange = function(){  //OnReadyStateChange事件
         console.log(oAjax)
-        if(oAjax.readyState == 4){  //4为完成
-            if(oAjax.status == 200){    //200为成功
+        if(oAjax.readyState == 4){   // ready
+            if(oAjax.status == 200){    //200 success
                 var json = eval('('+oAjax.responseText+')');
                 console.log(json);
                 var h = fnSucc(json);
-                console.log('hhhhh');
-
-                console.log('hhhhh');
-
             }else{
                 if(fnFaild){
                     fnFaild();
@@ -83,8 +79,8 @@ var head_data = {
     "tagling" : "辛占国的博客",
     "nav" : [
         {"href":"https://github.com/xinzhanguo","title":"GitHub"},
-        {"href":"https://twitter.com/picxin","title":"twitter"},
-        {"href":"mailto:e@xinzhanguo.cn","title":"email"}
+        {"href":"https://twitter.com/picxin","title":"Twitter"},
+        {"href":"https://www.facebook.com/picasso.xin","title":"Facebook"}
     ],
 };
 
@@ -121,7 +117,7 @@ var foot_output = Mustache.render(hereDoc(function(){
 */
 }),foot_data);
 
-var layout_output = 
+var layout_output =
 '<div class="sidebar pure-u-1 pure-u-md-1-4">'+head_output+'</div>\
  <div class="content pure-u-1 pure-u-md-7-12" id="main">'+foot_output+'</div>\
  <div class="pure-u-1 pure-u-md-1-12"></div>';
@@ -143,7 +139,7 @@ var ins = function(arts_data) {
                     <img class="post-avatar" alt="{{Author.name}}" height="48" width="48" src="{{Author.img}}">
                     <h2 class="post-title">{{title}}</h2>
                     <p class="post-meta">
-                        By <a href="{{Author.url}}" class="post-author">{{Author.name}}</a> under 
+                        By <a href="{{Author.url}}" class="post-author">{{Author.name}}</a> under
                         {{#tags}}<a class="post-category" href="#{{.}}">{{.}}</a>{{/tags}}
                     </p>
                 </header>
