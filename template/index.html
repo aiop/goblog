@@ -15,14 +15,14 @@
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/grids-responsive-min.css">
 <!--<![endif]-->
 <!--[if lte IE 8]>
-    <link rel="stylesheet" href="css/layouts/blog-old-ie.css">
+    <link rel="stylesheet" href="/css/blog-old-ie.css">
 <![endif]-->
 <!--[if gt IE 8]><!-->
     <style type="text/css">
         @charset "utf-8";
-        @import url("/css/layouts/blog.css");
+        @import url("/css/blog.css");
     </style>
-    <!-- <link rel="stylesheet" href="css/layouts/blog.css"> -->
+    <!-- <link rel="stylesheet" href="/css/blog.css"> -->
 <!--<![endif]-->
     <script type="text/javascript" src="/js/mustache.js"></script>
 </head>
@@ -67,22 +67,6 @@ function ajax(url, fnSucc, fnFaild){
         }
     };
 }
-
-document.onmousedown = function(event) {
-    console.log('def');
-
-    console.log(event);
-    console.log(event.srcElement.tagName);
-    if(event.srcElement.tagName=='A') {
-        console.log(history.length);
-        if(confirm("你真的想跳过去吗??你想清楚了吗?!")){
-            console.log(event.target);
-        }else{
-            console.log(event);
-        }
-    }
-};
-
 
 var data = {
     "title" : "辛占国的博客",
@@ -155,10 +139,10 @@ var ins = function(arts_data) {
             <h1 class="content-subhead">Pinned Post</h1>
             <section class="post">
                 <header class="post-header">
-                    <img class="post-avatar" alt="Tilo Mitra avatar" height="48" width="48" src="{{author.img}}">
+                    <img class="post-avatar" alt="{{Author.name}}" height="48" width="48" src="{{Author.img}}">
                     <h2 class="post-title">{{title}}</h2>
                     <p class="post-meta">
-                        By <a href="{{author.url}}" class="post-author">{{author.name}}</a> under 
+                        By <a href="{{Author.url}}" class="post-author">{{Author.name}}</a> under 
                         {{#tags}}<a class="post-category" href="#{{.}}">{{.}}</a>{{/tags}}
                     </p>
                 </header>
@@ -171,14 +155,13 @@ var ins = function(arts_data) {
     */}),arts_data);
     document.getElementById('main').innerHTML = list_output+document.getElementById('main').innerHTML;
     document.onmousedown = function(event) {
-        console.log('add');
         console.log(event);
     }
 }
 document.onkeydown = function(event) {
     console.log(event);
     console.log(event.keyCode);
-    ajax('http://localhost:8080/get?id=4',ins,alert);
+    ajax('http://localhost:8080/get?id=3',ins,alert);
 }
 </script>
 </body>

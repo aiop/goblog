@@ -28,7 +28,7 @@ type Article struct {
     Title       string `json:"title"`
     Link        string `json:"link"`
     Description string `json:"description"`
-    Tags        string `json:"tags"`
+    Tags        []string `json:"tags"`
     Time        int64 `json:"time"`
     Author      Author `json"Author"`
 }
@@ -36,6 +36,7 @@ type Article struct {
 func main() {
     http.Handle("/css/", http.FileServer(http.Dir("template")))
     http.Handle("/js/", http.FileServer(http.Dir("template")))
+    http.Handle("/img/", http.FileServer(http.Dir("template")))
     http.Handle("/", http.FileServer(http.Dir("template")))
     http.HandleFunc("/set", sethello)
     http.HandleFunc("/get", gethello)
@@ -44,36 +45,40 @@ func main() {
 }
 
 func gethello(w http.ResponseWriter, r *http.Request) {
+    var jsonString, _jsonString string
     r.ParseForm()
     if r.Method == "GET" {
         id := r.FormValue("id")
         start, err := strconv.Atoi(id)
-
+        _jsonString = ""
         if err != nil {
-            jsonString := ""
+            _jsonString = ""
         } else {
-            getArr := getAlist("index:a:list", start, PreNum)
-
+            fmt.Println(start,"#",PreNum)
+            getArr := getAlist("index:a:list", float64(start), float64(PreNum))
+            fmt.Println(getArr)
             if getArr != nil {
-                jsonString := strings.Join(getArr, ",")
+                _jsonString = strings.Join(getArr, ",")
             } else {
-                jsonString := ""
+                _jsonString = ""
             }
         }
-        jsonString = "{\"articles\":[" + jsonString + "]}"
+        jsonString = "{\"articles\":[" + _jsonString + "]}"
         io.WriteString(w, jsonString)
     }
 }
 
 func sethello(w http.ResponseWriter, r *http.Request) {
     var art Article
-
+    var strid string
     r.ParseForm()
     if r.Method == "POST" {
         art.Title        = r.PostFormValue("title")
         art.Link         = r.PostFormValue("link")
         art.Description  = r.PostFormValue("description")
-        art.Tags         = r.PostFormValue("tags")
+        _tags         := r.PostFormValue("tags")
+        tags := strings.Split(_tags,",")
+        art.Tags         = tags
         art.Author.Name  = r.PostFormValue("author[name]")
         art.Author.Url   = r.PostFormValue("author[url]")
         art.Author.Img   = r.PostFormValue("author[img]")
@@ -91,27 +96,26 @@ func sethello(w http.ResponseWriter, r *http.Request) {
             fmt.Println("Ping Redis err:", pong, err)
         } else {
             id, err := client.Incr("max:a:id").Result()
-
+            strid = strconv.Itoa(int(id))
             if err != nil {
                 fmt.Println("Incr err:", err)
             } else {
-                art.Id = id
+                art.Id = strid
                 str, err := json.Marshal(art)
-
                 if err != nil {
                     fmt.Println("json.Marshal err:", err)
                 } else {
-                    client.Sadd("index:a:list", id)
-                    client.Set("index:a:sort:" + id, id)
-                    client.Set("a:" + id, str)
-                    io.WriteString(w, str)
+                    client.SAdd("index:a:list", strid)
+                    client.Set("index:a:sort:" + strid, strid, 0)
+                    client.Set("a:" + strid, str, 0)
+                    io.WriteString(w, strid)
                 }
             }
         }
     }
 }
 
-func getAlist(ListKey string, Offset int, Count int) []string {
+func getAlist(ListKey string, Offset float64, Count float64) []string {
     var sort redis.Sort
     getkey := []string{"a:*"}
 
@@ -126,10 +130,10 @@ func getAlist(ListKey string, Offset int, Count int) []string {
         fmt.Println(pong, err)
     } else {
         sort.By = "a:sort:*"
-        sort.Offset = 0
-        sort.Count = 1
+        sort.Offset = Offset
+        sort.Count = Count
         sort.Get = getkey
-        sort.Order = "DESC"
+        sort.Order = "ASC"
 
         getArr, err := client.Sort(ListKey, sort).Result()
 
