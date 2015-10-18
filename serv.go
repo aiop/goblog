@@ -48,10 +48,12 @@ func gethello(w http.ResponseWriter, r *http.Request) {
     if r.Method == "GET" {
         id := r.FormValue("id")
         start, err := strconv.Atoi(id)
+
         if err != nil {
             jsonString := ""
         } else {
             getArr := getAlist("index:a:list", start, PreNum)
+
             if getArr != nil {
                 jsonString := strings.Join(getArr, ",")
             } else {
@@ -67,9 +69,7 @@ func sethello(w http.ResponseWriter, r *http.Request) {
     var art Article
 
     r.ParseForm()
-
     if r.Method == "POST" {
-
         art.Title        = r.PostFormValue("title")
         art.Link         = r.PostFormValue("link")
         art.Description  = r.PostFormValue("description")
@@ -91,11 +91,13 @@ func sethello(w http.ResponseWriter, r *http.Request) {
             fmt.Println("Ping Redis err:", pong, err)
         } else {
             id, err := client.Incr("max:a:id").Result()
+
             if err != nil {
                 fmt.Println("Incr err:", err)
             } else {
                 art.Id = id
                 str, err := json.Marshal(art)
+
                 if err != nil {
                     fmt.Println("json.Marshal err:", err)
                 } else {
