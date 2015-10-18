@@ -133,3 +133,29 @@ func getjson(start int, sign int, limit int ) string {
     print(js)
     return js
 }
+
+func redispagelist() {
+    var sort redis.Sort
+    getkey := []string{"a:*"}
+
+    client := redis.NewClient(&redis.Options{
+        Addr:     "localhost:6379",
+        Password: "", // no password set
+        DB:       1,  // use default DB
+    })
+    pong, err := client.Ping().Result()
+    print(pong,err)
+
+    sort.By = "a:sort:*"
+    sort.Offset = 0
+    sort.Count = 1
+    sort.Get = getkey
+    sort.Order = "asc"
+
+    rs,err := client.Sort("index:a:list",sort).Result()
+    print(err)
+    for i,v:=range rs {
+        print(i,v)
+    }
+    fmt.Println(rs)  
+}
