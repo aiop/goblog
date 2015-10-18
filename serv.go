@@ -11,6 +11,11 @@ import (
     "strconv"
 )
 
+const Port = "8080"
+const RedisAddr = "localhost:6379"
+const RedisPassword = ""
+const RedisDb = 0
+const PreNum = 3
 
 type Author struct {
     Name string `json:"name"`
@@ -28,10 +33,6 @@ type Article struct {
     Author      Author `json"Author"`
 }
 
-type User struct {
-    UserName string
-}
-
 func main() {
     http.Handle("/css/", http.FileServer(http.Dir("template")))
     http.Handle("/js/", http.FileServer(http.Dir("template")))
@@ -39,27 +40,36 @@ func main() {
     http.HandleFunc("/set", sethello)
     http.HandleFunc("/get", gethello)
 
-    http.ListenAndServe(":8080", nil)
+    http.ListenAndServe(":"+Port, nil)
 }
 
 func gethello(w http.ResponseWriter, r *http.Request) {
     r.ParseForm()
     if r.Method == "GET" {
         id := r.FormValue("id")
-        start,err := strconv.Atoi(id)
+        start, err := strconv.Atoi(id)
         if err != nil {
-            jstr := ""
+            jsonString := ""
         } else {
-            jstr := getjson(start,1,2)
+            getArr := getAlist("index:a:list", start, PreNum)
+            if getArr != nil {
+                jsonString := strings.Join(getArr, ",")
+            } else {
+                jsonString := ""
+            }
         }
-        io.WriteString(w, jstr)
+        jsonString = "{\"articles\":[" + jsonString + "]}"
+        io.WriteString(w, jsonString)
     }
 }
 
 func sethello(w http.ResponseWriter, r *http.Request) {
     var art Article
+
     r.ParseForm()
+
     if r.Method == "POST" {
+
         art.Title        = r.PostFormValue("title")
         art.Link         = r.PostFormValue("link")
         art.Description  = r.PostFormValue("description")
@@ -68,94 +78,64 @@ func sethello(w http.ResponseWriter, r *http.Request) {
         art.Author.Url   = r.PostFormValue("author[url]")
         art.Author.Img   = r.PostFormValue("author[img]")
         art.Time         = time.Now().Unix()
+
         client := redis.NewClient(&redis.Options{
-            Addr:     "localhost:6379",
-            Password: "", // no password set
-            DB:       0,  // use default DB
+            Addr:     RedisAddr,
+            Password: RedisPassword,
+            DB:       RedisDb,
         })
+
         pong, err := client.Ping().Result()
-        print(pong)
+
         if err != nil {
-            fmt.Println("redis err:", err)
+            fmt.Println("Ping Redis err:", pong, err)
         } else {
-            b, err := json.Marshal(art)
+            id, err := client.Incr("max:a:id").Result()
             if err != nil {
-                fmt.Println("dbsize err:", err)
+                fmt.Println("Incr err:", err)
             } else {
-                id, err := client.Incr("max:a:id").Result()
-                client.Sadd("index:a:list",id)
-                client.Set("index:a:sort:"+id, id)
-                client.Set("a:"+id,b)
-                io.WriteString(w, b)
+                art.Id = id
+                str, err := json.Marshal(art)
+                if err != nil {
+                    fmt.Println("json.Marshal err:", err)
+                } else {
+                    client.Sadd("index:a:list", id)
+                    client.Set("index:a:sort:" + id, id)
+                    client.Set("a:" + id, str)
+                    io.WriteString(w, str)
+                }
             }
         }
     }
 }
 
-func getjson(start int, sign int, limit int ) string {
-    var sarr []string
-    var js string
-    client := redis.NewClient(&redis.Options{
-        Addr:     "localhost:6379",
-        Password: "", // no password set
-        DB:       0,  // use default DB
-    })
-    pong, err := client.Ping().Result()
-    print(pong,err)
-
-    for i := 0; i < limit; i++ {
-
-        u := limit*sign - i + start
-        d := strconv.Itoa(u)
-        key := "a:"+string(d)
-
-        exist, err := client.Exists(key).Result()
-
-        if err != nil {
-            fmt.Println("exist key:", key, "err" , err)
-        } else if exist {
-            val, err := client.Get(key).Result()
-            if err != nil {
-                fmt.Println("get key:", key, "err" , err)
-            } else {
-                sarr = append(sarr, val)
-            }
-        } else {
-            fmt.Println("not exist key:", key, "err" , err)
-        }
-    }
-    s := strings.Join(sarr,",")
-    if s != ""  {
-        js = "{\"articles\":[" + s + "]}"
-    } else {
-        js = "{\"error:1\"}"
-    }
-    print(js)
-    return js
-}
-
-func redispagelist() {
+func getAlist(ListKey string, Offset int, Count int) []string {
     var sort redis.Sort
     getkey := []string{"a:*"}
 
     client := redis.NewClient(&redis.Options{
-        Addr:     "localhost:6379",
-        Password: "", // no password set
-        DB:       1,  // use default DB
+        Addr:     RedisAddr,
+        Password: RedisPassword,
+        DB:       RedisDb,
     })
     pong, err := client.Ping().Result()
-    print(pong,err)
 
-    sort.By = "a:sort:*"
-    sort.Offset = 0
-    sort.Count = 1
-    sort.Get = getkey
-    sort.Order = "asc"
+    if err != nil {
+        fmt.Println(pong, err)
+    } else {
+        sort.By = "a:sort:*"
+        sort.Offset = 0
+        sort.Count = 1
+        sort.Get = getkey
+        sort.Order = "DESC"
 
-    rs,err := client.Sort("index:a:list",sort).Result()
-    print(err)
-    for i,v:=range rs {
-        print(i,v)
+        getArr, err := client.Sort(ListKey, sort).Result()
+
+        if err != nil {
+            fmt.Println(getArr, err)
+        } else {
+            return getArr
+        }
     }
-    fmt.Println(rs)  
+    return nil
 }
