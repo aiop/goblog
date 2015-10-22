@@ -3,11 +3,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>辛占国的博客</title>
-    <meta name="keywords" content="辛占国的博客">
-    <meta name="description" content="辛占国的博客">
+    <title>辛占国的朋友圈</title>
+    <meta name="keywords" content="辛占国的朋友圈,Golang,Redis">
+    <meta name="description" content="辛占国的朋友圈,利用Golang和Redis设计而成的,类似微信朋友圈的微博客系统">
     <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
-    <link rel="stylesheet" type="text/css" href="http://purecss.io/combo/1.18.13?/css/layouts/blog.css">
 <!--[if lte IE 8]>
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/grids-responsive-old-ie-min.css">
 <![endif]-->
@@ -65,9 +64,9 @@ function ajax(url, fnSucc, fnFaild){
 }
 
 var data = {
-    "title" : "辛占国的博客",
-    "keywords" : "辛占国的博客",
-    "description" : "辛占国的博客",
+    "title" : "辛占国的朋友圈",
+    "keywords" : "辛占国的朋友圈,Golang,Redis",
+    "description" : "辛占国的朋友圈,利用Golang和Redis设计而成的,类似微信朋友圈的微博客系统",
 };
 
 document.title=data.title;
@@ -75,8 +74,8 @@ document.getElementsByTagName('meta')['keywords'].content = data.keywords;
 document.getElementsByTagName('meta')['description'].content = data.description;
 
 var head_data = {
-    "bolg_name" : "辛占国的博客",
-    "tagling" : "辛占国的博客",
+    "blog_name" : "xinzhanguo",
+    "tagling" : "朋友圈",
     "nav" : [
         {"href":"https://github.com/xinzhanguo","title":"GitHub"},
         {"href":"https://twitter.com/picxin","title":"Twitter"},
@@ -100,7 +99,7 @@ var head_output = Mustache.render(hereDoc(function(){
 
 var foot_data = {
     "footnav" : [
-        {"href":"http://purecss.io","title":"Pure title"},
+        {"href":"http://purecss.io","title":"Pure Css"},
         {"href":"http://yuilibrary.com","title":"YUI Library"}
     ]
 };
@@ -265,7 +264,7 @@ document.onkeydown = function(event) {
     }
 }
 
-var time = 10000;
+var time = 30000;
 var timer = setInterval(function(){
     lastnews()
     var times = document.getElementsByClassName('posttime');
