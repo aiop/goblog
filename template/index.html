@@ -49,11 +49,11 @@ function ajax(url, fnSucc, fnFaild){
 
     //4.接收返回
     oAjax.onreadystatechange = function(){  //OnReadyStateChange事件
-        console.log(oAjax)
+        //console.log(oAjax)
         if(oAjax.readyState == 4){   // ready
             if(oAjax.status == 200){    //200 success
                 var json = eval('('+oAjax.responseText+')');
-                console.log(json);
+                //console.log(json);
                 var h = fnSucc(json);
             }else{
                 if(fnFaild){
@@ -119,7 +119,7 @@ var foot_output = Mustache.render(hereDoc(function(){
 
 var layout_output =
 '<div class="sidebar pure-u-1 pure-u-md-1-4">'+head_output+'</div>\
- <div class="content pure-u-1 pure-u-md-7-12" id="main">'+foot_output+'</div>\
+ <div class="content pure-u-1 pure-u-md-7-12"><div id="main"></div>'+foot_output+'</div>\
  <div class="pure-u-1 pure-u-md-1-12"></div>';
 
 var layoutcontainer = function(html) {
@@ -129,11 +129,64 @@ var layoutcontainer = function(html) {
 
 layoutcontainer(layout_output);
 
-var ins = function(arts_data) {
+
+function getDateDiff(dateTimeStamp){
+    var len = dateTimeStamp.length;
+    if (len<11) {
+        var dateTimeStamp = dateTimeStamp*1000;
+    }
+    //JavaScript函数：
+    var minute = 1000 * 60;
+    var hour = minute * 60;
+    var day = hour * 24;
+    var halfamonth = day * 15;
+    var month = day * 30;
+    var year = day*365;
+
+    var now = new Date().getTime();
+
+    var diffValue = now - dateTimeStamp;
+
+    if(diffValue < 0){
+        return "刚刚"
+    }
+    var yearC = diffValue/year;
+    var monthC = diffValue/month;
+    var weekC = diffValue/(7*day);
+    var dayC = diffValue/day;
+    var hourC = diffValue/hour;
+    var minC = diffValue/minute;
+    if(monthC>=1){
+        result="" + parseInt(monthC) + "月前";
+    }
+    else if(weekC>=1){
+        result="" + parseInt(weekC) + "周前";
+    }
+    else if(dayC>=1){
+        result=""+ parseInt(dayC) +"天前";
+    }
+    else if(hourC>=1){
+        result=""+ parseInt(hourC) +"小时前";
+    }
+    else if(minC>=1){
+        result=""+ parseInt(minC) +"分钟前";
+    }else {
+        result="刚刚";
+    }
+    return result;
+}
+
+var ins = function(arts_data, order) {
+    arts_data.blod = function() {
+         return function(text, render) {
+             var s = getDateDiff(render(text))
+             return "<time>" + s + "</time>";
+         };
+    }
     var list_output = Mustache.render(hereDoc(function(){/*
         {{#articles}}
         <div class="posts" id="{{id}}">
-            <h1 class="content-subhead">Pinned Post</h1>
+            <h1 class="content-subhead posttime" data-time="{{time}}">{{#blod}}{{time}}{{/blod}}</h1>
             <section class="post">
                 <header class="post-header">
                     <img class="post-avatar" alt="{{Author.name}}" height="48" width="48" src="{{Author.img}}">
@@ -150,16 +203,69 @@ var ins = function(arts_data) {
         </div>
         {{/articles}}
     */}),arts_data);
-    document.getElementById('main').innerHTML = list_output+document.getElementById('main').innerHTML;
-    document.onmousedown = function(event) {
-        console.log(event);
+    if(order=='up') {
+        document.getElementById('main').innerHTML = list_output+document.getElementById('main').innerHTML;
+    } else {
+        document.getElementById('main').innerHTML = document.getElementById('main').innerHTML+list_output;
     }
+
 }
+
+var page_up_keycode=87;
+var page_down_keycode=83;
+
+ajax('http://localhost:8080/get?id=0&order=up',function(data) {ins(data,'up');},alert);
+
 document.onkeydown = function(event) {
-    console.log(event);
-    console.log(event.keyCode);
-    ajax('http://localhost:8080/get?id=3',ins,alert);
+    var keycode = event.keyCode;
+    var id = 0;
+    var order = 'down';
+    //console.log(keycode)
+    if( (0+keycode) === (0+page_down_keycode) ) {
+        //console.log('down')
+        var order = 'down'
+        var min_id = get_min_id()
+        id = min_id
+    } else if( (0+keycode) === (0+page_up_keycode) ) {
+        //console.log('up')
+        var order = 'up'
+        var max_id = get_max_id()
+        id = max_id
+    }
+    ajax('http://localhost:8080/get?id=' + id + '&order='+order,function(data) {ins(data,order);},alert);
 }
+var get_min_id = function() {
+    var min_id = 0;
+    var all = document.getElementsByClassName('posts');
+    if (all.length) {
+        var last = all.length;
+        min_id = all[(last-1)].id;
+    }
+    return min_id
+}
+var get_max_id = function() {
+    var max_id=0;
+    var all = document.getElementsByClassName('posts');
+    if (all.length) {
+        max_id = all[0].id;
+    }
+    return max_id
+}
+var time = 3000;
+var timer = setInterval(function(){
+    var times = document.getElementsByClassName('posttime');
+    if (times.length) {
+        for(i in times) {
+            if (!isNaN(i)) {
+                var t = times[i].getAttribute('data-time');
+                if (t) {
+                    times[i].innerText=getDateDiff(t)
+                }
+            }
+        }
+    }
+}, time);
+
 </script>
 </body>
 </html>

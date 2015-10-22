@@ -9,13 +9,8 @@ import (
     "fmt"
     "strings"
     "strconv"
+    "sort"
 )
-
-const Port = "8080"
-const RedisAddr = "localhost:6379"
-const RedisPassword = ""
-const RedisDb = 0
-const PreNum = 3
 
 type Author struct {
     Name string `json:"name"`
@@ -33,6 +28,12 @@ type Article struct {
     Author      Author `json"Author"`
 }
 
+const Port = "8080"
+const RedisAddr = "localhost:6379"
+const RedisPassword = ""
+const RedisDb = 0
+const PreNum = 3
+
 func main() {
     http.Handle("/css/", http.FileServer(http.Dir("template")))
     http.Handle("/js/", http.FileServer(http.Dir("template")))
@@ -49,15 +50,32 @@ func gethello(w http.ResponseWriter, r *http.Request) {
     r.ParseForm()
     if r.Method == "GET" {
         id := r.FormValue("id")
+        order := r.FormValue("order")
+
         start, err := strconv.Atoi(id)
+        prenum := PreNum
         _jsonString = ""
+
+
+        if start == 0 && order == "up" {
+            maxid := getMaxid()
+            start = maxid - PreNum
+        } else if order == "down" {
+            if start > PreNum {
+                start = start - PreNum - 1
+            } else {
+                prenum = start-1
+                start = 1
+            }
+        }
+
         if err != nil {
             _jsonString = ""
         } else {
-            fmt.Println(start,"#",PreNum)
-            getArr := getAlist("index:a:list", float64(start), float64(PreNum))
-            fmt.Println(getArr)
+            getArr := getAlist("index:a:list", float64(start), float64(prenum))
+            fmt.Println("start:", start)
             if getArr != nil {
+                sort.Sort(sort.Reverse(sort.StringSlice(getArr)))
                 _jsonString = strings.Join(getArr, ",")
             } else {
                 _jsonString = ""
@@ -76,13 +94,14 @@ func sethello(w http.ResponseWriter, r *http.Request) {
         art.Title        = r.PostFormValue("title")
         art.Link         = r.PostFormValue("link")
         art.Description  = r.PostFormValue("description")
-        _tags         := r.PostFormValue("tags")
-        tags := strings.Split(_tags,",")
-        art.Tags         = tags
         art.Author.Name  = r.PostFormValue("author[name]")
         art.Author.Url   = r.PostFormValue("author[url]")
         art.Author.Img   = r.PostFormValue("author[img]")
         art.Time         = time.Now().Unix()
+
+        _tags           := r.PostFormValue("tags")
+        tags            := strings.Split(_tags,",")
+        art.Tags         = tags
 
         client := redis.NewClient(&redis.Options{
             Addr:     RedisAddr,
@@ -144,4 +163,31 @@ func getAlist(ListKey string, Offset float64, Count float64) []string {
         }
     }
     return nil
+}
+
+func getMaxid() int {
+    client := redis.NewClient(&redis.Options{
+        Addr:     RedisAddr,
+        Password: RedisPassword,
+        DB:       RedisDb,
+    })
+    pong, err := client.Ping().Result()
+
+    if err != nil {
+        fmt.Println(pong, err)
+    } else {
+
+        Maxid, err := client.Get("max:a:id").Result()
+        if err != nil {
+            fmt.Println(Maxid, err)
+        } else {
+            id, err := strconv.Atoi(Maxid)
+            if err != nil {
+                fmt.Println(id, err)
+            } else {
+                return id
+            }
+        }
+    }
+    return 0
 }
