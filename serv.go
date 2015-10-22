@@ -32,7 +32,7 @@ const Port = "8080"
 const RedisAddr = "localhost:6379"
 const RedisPassword = ""
 const RedisDb = 0
-const PreNum = 6
+const PreNum = 10
 const BaseNum = 1000000000
 const BegainNm = 1000000001
 
@@ -72,20 +72,14 @@ func gethello(w http.ResponseWriter, r *http.Request) {
             }
 
             if start < BegainNm {
-                fmt.Println(start)
                 prenum = PreNum + (start - BegainNm) + 1
                 start = BegainNm - 1
-                fmt.Println("prenum:",prenum)
             }
-
-
-
 
             if prenum < 1 {
                 _jsonString = ""
             } else {
                 fmt.Println(start)
-
                 getArr := getAlist("index:a:list", float64(start-BaseNum), float64(prenum))
                 fmt.Println("start:", start)
                 if getArr != nil {
