@@ -211,29 +211,7 @@ var ins = function(arts_data, order) {
 
 }
 
-var page_up_keycode=87;
-var page_down_keycode=83;
 
-ajax('http://localhost:8080/get?id=0&order=up',function(data) {ins(data,'up');},alert);
-
-document.onkeydown = function(event) {
-    var keycode = event.keyCode;
-    var id = 0;
-    var order = 'down';
-    //console.log(keycode)
-    if( (0+keycode) === (0+page_down_keycode) ) {
-        //console.log('down')
-        var order = 'down'
-        var min_id = get_min_id()
-        id = min_id
-    } else if( (0+keycode) === (0+page_up_keycode) ) {
-        //console.log('up')
-        var order = 'up'
-        var max_id = get_max_id()
-        id = max_id
-    }
-    ajax('http://localhost:8080/get?id=' + id + '&order='+order,function(data) {ins(data,order);},alert);
-}
 var get_min_id = function() {
     var min_id = 0;
     var all = document.getElementsByClassName('posts');
@@ -243,6 +221,7 @@ var get_min_id = function() {
     }
     return min_id
 }
+
 var get_max_id = function() {
     var max_id=0;
     var all = document.getElementsByClassName('posts');
@@ -251,14 +230,51 @@ var get_max_id = function() {
     }
     return max_id
 }
-var time = 3000;
+
+var getArts = function (id, order) {
+    ajax('http://localhost:8080/get?id=' + id + '&order='+order,function(data) {ins(data,order);},alert);
+}
+
+var lastnews = function () {
+    var id = 0;
+    var order = 'up'
+    var max_id = get_max_id()
+    id = max_id
+    getArts(id, order)
+}
+
+lastnews()
+
+var prenews = function () {
+    var id = 0;
+    var order = 'down'
+    var min_id = get_min_id()
+    id = min_id
+    getArts(id, order)
+}
+
+var page_up_keycode=87;
+var page_down_keycode=83;
+
+document.onkeydown = function(event) {
+    var keycode = event.keyCode;
+    if( (0+keycode) === (0+page_down_keycode) ) {
+        prenews()
+    } else if( (0+keycode) === (0+page_up_keycode) ) {
+        lastnews()
+    }
+}
+
+var time = 10000;
 var timer = setInterval(function(){
+    lastnews()
     var times = document.getElementsByClassName('posttime');
     if (times.length) {
         for(i in times) {
             if (!isNaN(i)) {
                 var t = times[i].getAttribute('data-time');
                 if (t) {
+
                     times[i].innerText=getDateDiff(t)
                 }
             }
