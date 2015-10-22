@@ -163,6 +163,11 @@ ul {
     height: auto;
 }
 
+.button-secondary {
+    background: #fff;
+    color: #666;
+    border: 1px solid #ddd;
+}
 
 @media (min-width: 48em) {
     .content {
