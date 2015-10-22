@@ -32,7 +32,9 @@ const Port = "8080"
 const RedisAddr = "localhost:6379"
 const RedisPassword = ""
 const RedisDb = 0
-const PreNum = 3
+const PreNum = 6
+const BaseNum = 1000000000
+const BegainNm = 1000000001
 
 func main() {
     http.Handle("/css/", http.FileServer(http.Dir("template")))
@@ -55,32 +57,47 @@ func gethello(w http.ResponseWriter, r *http.Request) {
         start, err := strconv.Atoi(id)
         prenum := PreNum
         _jsonString = ""
-
-
-        if start == 0 && order == "up" {
-            maxid := getMaxid()
-            start = maxid - PreNum
-        } else if order == "down" {
-            if start > PreNum {
-                start = start - PreNum - 1
-            } else {
-                prenum = start-1
-                start = 1
-            }
-        }
-
+        fmt.Println(start)
         if err != nil {
             _jsonString = ""
         } else {
-            getArr := getAlist("index:a:list", float64(start), float64(prenum))
-            fmt.Println("start:", start)
-            if getArr != nil {
-                sort.Sort(sort.Reverse(sort.StringSlice(getArr)))
-                _jsonString = strings.Join(getArr, ",")
-            } else {
-                _jsonString = ""
+
+            if start == 0 && order == "up" {
+                maxid := getMaxid()
+                start = maxid - PreNum
             }
+
+            if order == "down" {
+                start = start - PreNum - 1
+            }
+
+            if start < BegainNm {
+                fmt.Println(start)
+                prenum = PreNum + (start - BegainNm) + 1
+                start = BegainNm - 1
+                fmt.Println("prenum:",prenum)
+            }
+
+
+
+
+            if prenum < 1 {
+                _jsonString = ""
+            } else {
+                fmt.Println(start)
+
+                getArr := getAlist("index:a:list", float64(start-BaseNum), float64(prenum))
+                fmt.Println("start:", start)
+                if getArr != nil {
+                    sort.Sort(sort.Reverse(sort.StringSlice(getArr)))
+                    _jsonString = strings.Join(getArr, ",")
+                } else {
+                    _jsonString = ""
+                }
+            }
+
         }
+
         jsonString = "{\"articles\":[" + _jsonString + "]}"
         io.WriteString(w, jsonString)
     }
