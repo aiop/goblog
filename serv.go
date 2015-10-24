@@ -102,6 +102,7 @@ func sethello(w http.ResponseWriter, r *http.Request) {
     var strid string
     r.ParseForm()
     if r.Method == "POST" {
+        art.Id           = r.PostFormValue("id")
         art.Title        = r.PostFormValue("title")
         art.Link         = r.PostFormValue("link")
         art.Description  = r.PostFormValue("description")
@@ -125,20 +126,38 @@ func sethello(w http.ResponseWriter, r *http.Request) {
         if err != nil {
             fmt.Println("Ping Redis err:", pong, err)
         } else {
-            id, err := client.Incr("max:a:id").Result()
-            strid = strconv.Itoa(int(id))
-            if err != nil {
-                fmt.Println("Incr err:", err)
-            } else {
-                art.Id = strid
-                str, err := json.Marshal(art)
+            if art.Id == "" {
+                id, err := client.Incr("max:a:id").Result()
+                strid = strconv.Itoa(int(id))
                 if err != nil {
-                    fmt.Println("json.Marshal err:", err)
+                    fmt.Println("Incr err:", err)
                 } else {
-                    client.SAdd("index:a:list", strid)
-                    client.Set("index:a:sort:" + strid, strid, 0)
-                    client.Set("a:" + strid, str, 0)
-                    io.WriteString(w, strid)
+                    art.Id = strid
+                    str, err := json.Marshal(art)
+                    if err != nil {
+                        fmt.Println("json.Marshal err:", err)
+                    } else {
+                        client.SAdd("index:a:list", strid)
+                        client.Set("index:a:sort:" + strid, strid, 0)
+                        client.Set("a:" + strid, str, 0)
+                        io.WriteString(w, strid)
+                    }
+                }
+            } else {
+                var p Article
+                oart, err := client.Get("a:" + art.Id).Result()
+                if err != nil {
+                    fmt.Println(oart, err)
+                } else {
+                    json.Unmarshal([]byte(oart), &p)
+                    art.Time = p.Time
+                    str, err := json.Marshal(art)
+                    if err != nil {
+                        fmt.Println("json.Marshal err:", err)
+                    } else {
+                        client.Set("a:" + art.Id, str, 0)
+                        io.WriteString(w, art.Id)
+                    }
                 }
             }
         }
