@@ -43,6 +43,7 @@ func main() {
     http.Handle("/", http.FileServer(http.Dir("template")))
     http.HandleFunc("/set", sethello)
     http.HandleFunc("/get", gethello)
+    http.HandleFunc("/tag", taghello)
 
     http.ListenAndServe(":"+Port, nil)
 }
@@ -164,6 +165,12 @@ func sethello(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+func  taghello(w http.ResponseWriter, r *http.Request) {
+    r.ParseForm()
+    fmt.Println(r)
+    fmt.Println(w)
+    io.WriteString(w, "hello world!")
+}
 func getAlist(ListKey string, Offset float64, Count float64) []string {
     var sort redis.Sort
     getkey := []string{"a:*"}

@@ -234,7 +234,7 @@ var get_max_id = function() {
 }
 
 var getArts = function (id, order) {
-    ajax('http://localhost:8080/get?id=' + id + '&order='+order,function(data) {ins(data,order);},alert);
+    ajax('http://localhost:8080/get?id=' + id + '&order='+order,function(data) {ins(data,order);},console.log);
 }
 
 var lastnews = function () {
