@@ -100,9 +100,12 @@ func sethello(w http.ResponseWriter, r *http.Request) {
                     } else {
                         akey := "a:" + strid
                         client.LPush("list:index", akey)
-                        for i, t := range tags {
-                            kt := str2utf(t)
-                            client.LPush("list:tag:"+kt, akey)
+                        for _, t := range tags {
+                            t = strings.Trim(t," ")
+                            if t != "" {
+                                kt := str2utf(t)
+                                client.LPush("list:tag:"+kt, akey)
+                            }
                         }
                         client.Set(akey, str, 0)
                         io.WriteString(w, strid)
