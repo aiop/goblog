@@ -9,7 +9,6 @@ import (
     "fmt"
     "strings"
     "strconv"
-    "sort"
 )
 
 type Author struct {
@@ -36,66 +35,37 @@ const PreNum = 10
 const BaseNum = 1000000000
 const BegainNm = 1000000001
 
+var client *redis.Client
+
 func main() {
+    client = redis.NewClient(&redis.Options{
+            Addr:     RedisAddr,
+            Password: RedisPassword,
+            DB:       RedisDb,
+    })
+    pong, err := client.Ping().Result()
+
     http.Handle("/css/", http.FileServer(http.Dir("template")))
     http.Handle("/js/", http.FileServer(http.Dir("template")))
     http.Handle("/img/", http.FileServer(http.Dir("template")))
     http.Handle("/", http.FileServer(http.Dir("template")))
-    http.HandleFunc("/set", sethello)
-    http.HandleFunc("/get", gethello)
-    http.HandleFunc("/tag", taghello)
 
+    if err != nil {
+        fmt.Println(pong, err)
+        http.HandleFunc("/set", showerror)
+        http.HandleFunc("/get", showerror)
+        http.HandleFunc("/tag", showerror)
+    } else {
+        http.HandleFunc("/set", sethello)
+        http.HandleFunc("/get", gethello)
+        http.HandleFunc("/tag", taghello)
+    }
     http.ListenAndServe(":"+Port, nil)
 }
 
-func gethello(w http.ResponseWriter, r *http.Request) {
-    var jsonString, _jsonString string
-    r.ParseForm()
-    if r.Method == "GET" {
-        id := r.FormValue("id")
-        order := r.FormValue("order")
-
-        start, err := strconv.Atoi(id)
-        prenum := PreNum
-        _jsonString = ""
-        fmt.Println(start)
-        if err != nil {
-            _jsonString = ""
-        } else {
-
-            if start == 0 && order == "up" {
-                maxid := getMaxid()
-                start = maxid - PreNum
-            }
-
-            if order == "down" {
-                start = start - PreNum - 1
-            }
-
-            if start < BegainNm {
-                prenum = PreNum + (start - BegainNm) + 1
-                start = BegainNm - 1
-            }
-
-            if prenum < 1 {
-                _jsonString = ""
-            } else {
-                fmt.Println(start)
-                getArr := getAlist("index:a:list", float64(start-BaseNum), float64(prenum))
-                fmt.Println("start:", start)
-                if getArr != nil {
-                    sort.Sort(sort.Reverse(sort.StringSlice(getArr)))
-                    _jsonString = strings.Join(getArr, ",")
-                } else {
-                    _jsonString = ""
-                }
-            }
-
-        }
-
-        jsonString = "{\"articles\":[" + _jsonString + "]}"
-        io.WriteString(w, jsonString)
-    }
+func showerror(w http.ResponseWriter, r *http.Request) {
+    jsonString:="something is wrong"
+    io.WriteString(w, jsonString)
 }
 
 func sethello(w http.ResponseWriter, r *http.Request) {
@@ -116,17 +86,7 @@ func sethello(w http.ResponseWriter, r *http.Request) {
         tags            := strings.Split(_tags,",")
         art.Tags         = tags
 
-        client := redis.NewClient(&redis.Options{
-            Addr:     RedisAddr,
-            Password: RedisPassword,
-            DB:       RedisDb,
-        })
-
-        pong, err := client.Ping().Result()
-
-        if err != nil {
-            fmt.Println("Ping Redis err:", pong, err)
-        } else {
+        if client != nil {
             if art.Id == "" {
                 id, err := client.Incr("max:a:id").Result()
                 strid = strconv.Itoa(int(id))
@@ -138,9 +98,13 @@ func sethello(w http.ResponseWriter, r *http.Request) {
                     if err != nil {
                         fmt.Println("json.Marshal err:", err)
                     } else {
-                        client.SAdd("index:a:list", strid)
-                        client.Set("index:a:sort:" + strid, strid, 0)
-                        client.Set("a:" + strid, str, 0)
+                        akey := "a:" + strid
+                        client.LPush("list:index", akey)
+                        for i, t := range tags {
+                            kt := str2utf(t)
+                            client.LPush("list:tag:"+kt, akey)
+                        }
+                        client.Set(akey, str, 0)
                         io.WriteString(w, strid)
                     }
                 }
@@ -166,65 +130,140 @@ func sethello(w http.ResponseWriter, r *http.Request) {
 }
 
 func  taghello(w http.ResponseWriter, r *http.Request) {
+    var jsonString, _jsonString string
     r.ParseForm()
-    fmt.Println(r)
-    fmt.Println(w)
-    io.WriteString(w, "hello world!")
-}
-func getAlist(ListKey string, Offset float64, Count float64) []string {
-    var sort redis.Sort
-    getkey := []string{"a:*"}
+    if r.Method == "GET" {
 
-    client := redis.NewClient(&redis.Options{
-        Addr:     RedisAddr,
-        Password: RedisPassword,
-        DB:       RedisDb,
-    })
-    pong, err := client.Ping().Result()
+        name := r.FormValue("name")
+        p := r.FormValue("p")
+
+        page, err := strconv.Atoi(p)
+        prenum := PreNum
+        _jsonString = ""
+        if err != nil {
+            _jsonString = ""
+        } else {
+
+            if page <= 1 {
+                page = 1
+            }
+            page = page - 1
+            start := page * prenum
+            stop := start + prenum
+
+            if prenum < 1 {
+                _jsonString = ""
+            } else {
+                fmt.Println(start)
+                fmt.Println("name:", name)
+                name = str2utf(name)
+                fmt.Println("name:", name)
+
+                getArr := getAlist("list:tag:"+name, int64(start), int64(stop))
+                fmt.Println("start:", start)
+                if getArr != nil {
+                    _jsonString = strings.Join(getArr, ",")
+                } else {
+                    _jsonString = ""
+                }
+            }
+
+        }
+
+        jsonString = "{\"articles\":[" + _jsonString + "]}"
+        io.WriteString(w, jsonString)
+    }
+}
+
+func gethello(w http.ResponseWriter, r *http.Request) {
+    var jsonString, _jsonString string
+    r.ParseForm()
+    if r.Method == "GET" {
+        p := r.FormValue("p")
+
+        page, err := strconv.Atoi(p)
+        prenum := PreNum
+        _jsonString = ""
+        fmt.Println(page)
+        if err != nil {
+            _jsonString = ""
+        } else {
+            if page <= 1 {
+                page = 1
+            }
+            page = page - 1
+            start := page * prenum
+            stop := start + prenum
+
+            getArr := getAlist("list:index", int64(start), int64(stop))
+
+            if getArr != nil {
+                _jsonString = strings.Join(getArr, ",")
+            } else {
+                _jsonString = ""
+            }
+
+        }
+
+        jsonString = "{\"articles\":[" + _jsonString + "]}"
+        io.WriteString(w, jsonString)
+    }
+}
+
+func getAlist(ListKey string, start int64, stop int64) []string {
+
+    var Arr []string
+
+    getArr, err := client.LRange(ListKey, start, stop).Result()
 
     if err != nil {
-        fmt.Println(pong, err)
+        fmt.Println(getArr, err)
     } else {
-        sort.By = "a:sort:*"
-        sort.Offset = Offset
-        sort.Count = Count
-        sort.Get = getkey
-        sort.Order = "ASC"
-
-        getArr, err := client.Sort(ListKey, sort).Result()
-
-        if err != nil {
-            fmt.Println(getArr, err)
-        } else {
-            return getArr
+        for i, k := range getArr {
+            s := getA(k)
+            Arr = append(Arr, s)
+            fmt.Println("zenmle:", i, Arr, s,"buzhidao")
         }
     }
-    return nil
+
+    return Arr
+}
+
+func getA(akey string) string {
+
+    Art, err := client.Get(akey).Result()
+
+    if err != nil {
+        fmt.Println(Art, err)
+    }
+    return Art
 }
 
 func getMaxid() int {
-    client := redis.NewClient(&redis.Options{
-        Addr:     RedisAddr,
-        Password: RedisPassword,
-        DB:       RedisDb,
-    })
-    pong, err := client.Ping().Result()
-
+    var id int
+    Maxid, err := client.Get("max:a:id").Result()
     if err != nil {
-        fmt.Println(pong, err)
-    } else {
+        fmt.Println(Maxid, err)
+    }
 
-        Maxid, err := client.Get("max:a:id").Result()
-        if err != nil {
-            fmt.Println(Maxid, err)
+    id, err = strconv.Atoi(Maxid)
+    if err != nil {
+        fmt.Println(id, err)
+    }
+
+    return id
+}
+
+func str2utf(str string) string {
+    rs := []rune(str)
+    json := ""
+    for _, r := range rs {
+        rint := int(r)
+        if rint < 128 {
+            json += string(r)
         } else {
-            id, err := strconv.Atoi(Maxid)
-            if err != nil {
-                fmt.Println(id, err)
-            } else {
-                return id
-            }
+            json += "u"+strconv.FormatInt(int64(rint), 16) // json
         }
     }
-    return 0
+    return json
 }
