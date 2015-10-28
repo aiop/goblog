@@ -199,7 +199,7 @@ func gethello(w http.ResponseWriter, r *http.Request) {
             }
             page = page - 1
             start := page * prenum
-            stop := start + prenum
+            stop := start + prenum - 1
 
             getArr := getAlist("list:index", int64(start), int64(stop))
 

@@ -108,7 +108,7 @@ var foot_output = Mustache.render(hereDoc(function(){
 /*
     <div class="footer">
         <p>
-            <a class="button-secondary pure-button" href="javascript:prenews();">历史消息</a>
+            <a class="button-secondary pure-button" id="prenews" data-end="0" href="javascript:prenews();">历史消息</a>
         </p>
         <div class="pure-menu pure-menu-horizontal">
             <ul>
@@ -177,13 +177,19 @@ function getDateDiff(dateTimeStamp){
     }
     return result;
 }
-
+var prePage = 10;
 var ins = function(arts_data, order) {
     arts_data.blod = function() {
          return function(text, render) {
              var s = getDateDiff(render(text))
              return "<time>" + s + "</time>";
          };
+    }
+    var len = arts_data.articles.length;
+    if(len < prePage) {
+        var prenews = document.getElementById('prenews');
+        prenews.setAttribute('data-end',1);
+        prenews.innerText = 'End!';
     }
     var list_output = Mustache.render(hereDoc(function(){/*
         {{#articles}}
@@ -234,7 +240,11 @@ var get_max_id = function() {
 }
 
 var getPage = function (page) {
-    ajax('/get?p='+page,function(data){ins(data,'down');},console.log);
+    var prenews = document.getElementById('prenews');
+    var end = prenews.getAttribute("data-end");
+    if(end == "0") {
+        ajax('/get?p='+page,function(data){ins(data,'down');},console.log);
+    }
 }
 var page = 1;
 getPage(page)
