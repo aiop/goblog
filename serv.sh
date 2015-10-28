@@ -1,16 +1,16 @@
 #!/bin/bash
 case "$1" in
 'start')
-nohup ./gowebserver
+nohup ./gowebserver &
 echo "start...."
 ;;
 'stop')
-pkill ./gowebserver
+pkill ./gowebserver &
 echo "stop...."
 ;;
 'restart')
 pkill gowebserver
-nohup ./gowebserver
+nohup ./gowebserver &
 echo "start...."
 ;;
 *)
