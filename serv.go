@@ -255,7 +255,9 @@ func getMaxid() int {
     if err != nil {
         fmt.Println(id, err)
     }
-
+    if id < BaseNum {
+        id = BaseNum
+    }
     return id
 }
 
