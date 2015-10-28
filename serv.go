@@ -84,7 +84,12 @@ func sethello(w http.ResponseWriter, r *http.Request) {
 
         _tags           := r.PostFormValue("tags")
         tags            := strings.Split(_tags,",")
-        art.Tags         = tags
+        for _, t := range tags {
+            t = strings.Trim(t," ")
+            if t != "" {
+                art.Tags = append(art.Tags, t)
+            }
+        }
 
         if client != nil {
             if art.Id == "" {
@@ -105,6 +110,7 @@ func sethello(w http.ResponseWriter, r *http.Request) {
                             if t != "" {
                                 kt := str2utf(t)
                                 client.LPush("list:tag:"+kt, akey)
+                                art.Tags = append(art.Tags, t)
                             }
                         }
                         client.Set(akey, str, 0)
@@ -136,7 +142,8 @@ func  taghello(w http.ResponseWriter, r *http.Request) {
     var jsonString, _jsonString string
     r.ParseForm()
     if r.Method == "GET" {
-
+        client.Incr("visit")
+        client.Incr("visit:tag")
         name := r.FormValue("name")
         p := r.FormValue("p")
 
@@ -157,13 +164,8 @@ func  taghello(w http.ResponseWriter, r *http.Request) {
             if prenum < 1 {
                 _jsonString = ""
             } else {
-                fmt.Println(start)
-                fmt.Println("name:", name)
                 name = str2utf(name)
-                fmt.Println("name:", name)
-
                 getArr := getAlist("list:tag:"+name, int64(start), int64(stop))
-                fmt.Println("start:", start)
                 if getArr != nil {
                     _jsonString = strings.Join(getArr, ",")
                 } else {
@@ -182,12 +184,13 @@ func gethello(w http.ResponseWriter, r *http.Request) {
     var jsonString, _jsonString string
     r.ParseForm()
     if r.Method == "GET" {
+        client.Incr("visit")
+        client.Incr("visit:get")
         p := r.FormValue("p")
 
         page, err := strconv.Atoi(p)
         prenum := PreNum
         _jsonString = ""
-        fmt.Println(page)
         if err != nil {
             _jsonString = ""
         } else {
@@ -218,14 +221,13 @@ func getAlist(ListKey string, start int64, stop int64) []string {
     var Arr []string
 
     getArr, err := client.LRange(ListKey, start, stop).Result()
-
+    client.Incr("visit:list")
     if err != nil {
         fmt.Println(getArr, err)
     } else {
-        for i, k := range getArr {
+        for _, k := range getArr {
             s := getA(k)
             Arr = append(Arr, s)
-            fmt.Println("zenmle:", i, Arr, s,"buzhidao")
         }
     }
 
@@ -235,7 +237,7 @@ func getAlist(ListKey string, start int64, stop int64) []string {
 func getA(akey string) string {
 
     Art, err := client.Get(akey).Result()
-
+    client.Incr("visit:a")
     if err != nil {
         fmt.Println(Art, err)
     }

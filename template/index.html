@@ -234,25 +234,22 @@ var get_max_id = function() {
 }
 
 var getArts = function (id, order) {
-    ajax('http://localhost:8080/get?id=' + id + '&order='+order,function(data) {ins(data,order);},console.log);
+    ajax('/get?id=' + id + '&order='+order,function(data) {ins(data,order);},console.log);
 }
 
-var lastnews = function () {
-    var id = 0;
-    var order = 'up'
-    var max_id = get_max_id()
-    id = max_id
-    getArts(id, order)
+var getPage = function (page) {
+    ajax('/get?p='+page,function(data){ins(data,'down');},console.log);
 }
+var page = 1;
+getPage(page)
 
-lastnews()
+var lastnews = function() {
+    var id = get_max_id();
+}
 
 var prenews = function () {
-    var id = 0;
-    var order = 'down'
-    var min_id = get_min_id()
-    id = min_id
-    getArts(id, order)
+    page++;
+    getPage(page)
 }
 
 var page_up_keycode=87;
@@ -262,8 +259,6 @@ document.onkeydown = function(event) {
     var keycode = event.keyCode;
     if( (0+keycode) === (0+page_down_keycode) ) {
         prenews()
-    } else if( (0+keycode) === (0+page_up_keycode) ) {
-        lastnews()
     }
 }
 
@@ -276,7 +271,6 @@ var timer = setInterval(function(){
             if (!isNaN(i)) {
                 var t = times[i].getAttribute('data-time');
                 if (t) {
-
                     times[i].innerText=getDateDiff(t)
                 }
             }
