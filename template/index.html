@@ -233,10 +233,6 @@ var get_max_id = function() {
     return max_id
 }
 
-var getArts = function (id, order) {
-    ajax('/get?id=' + id + '&order='+order,function(data) {ins(data,order);},console.log);
-}
-
 var getPage = function (page) {
     ajax('/get?p='+page,function(data){ins(data,'down');},console.log);
 }
