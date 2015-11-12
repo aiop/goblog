@@ -24,6 +24,7 @@
     <!-- <link rel="stylesheet" href="/css/blog.css"> -->
 <!--<![endif]-->
     <script type="text/javascript" src="/js/mustache.js"></script>
+    <script type="text/javascript" src="/js/marked.js"></script>
 </head>
 <body>
 <div id="layout" class="pure-g"></div>
@@ -185,6 +186,11 @@ var ins = function(arts_data, order) {
              return "<time>" + s + "</time>";
          };
     }
+    arts_data.marked = function() {
+        return function(text, render) {
+            return marked(render(text), {breaks: true});
+        };
+    }
     var len = arts_data.articles.length;
     if(len < prePage) {
         var prenews = document.getElementById('prenews');
@@ -205,7 +211,7 @@ var ins = function(arts_data, order) {
                     </p>
                 </header>
                 <div class="post-description">
-                    <p>{{description}}</p>
+                    <p>{{#marked}}{{description}}{{/marked}}</p>
                 </div>
             </section>
         </div>
